@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import numpy as np
 import os
-import requests
+import gdown
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
@@ -11,11 +11,8 @@ MODEL_PATH = "mango_model.h5"
 
 if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000:
     print("Downloading model...")
-    url = os.environ["MODEL_URL"]
-    r = requests.get(url, stream=True)
-    with open(MODEL_PATH, "wb") as f:
-        for chunk in r.iter_content(chunk_size=8192):
-            f.write(chunk)
+    url = os.environ["MODEL_URL"]  # Normal Google Drive share link
+    gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
     print("Model downloaded successfully.")
 
 model = load_model(MODEL_PATH)
