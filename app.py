@@ -1,15 +1,20 @@
 from flask import Flask, render_template, request
 import numpy as np
 import os
-from tensorflow.keras.models import load_model
+import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 from pymongo import MongoClient
 from datetime import datetime
 
 app = Flask(__name__)
 
-# Load trained model
-model = load_model("mango_model.h5")
+# Load TFLite model
+TFLITE_MODEL_PATH = "mango_model.tflite"
+interpreter = tf.lite.Interpreter(model_path=TFLITE_MODEL_PATH)
+interpreter.allocate_tensors()
+
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 classes = [
     "Anthracnose",
@@ -23,7 +28,6 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # MongoDB Connection
 client = MongoClient("mongodb+srv://ammupatil456_db_user:mango1234@cluster0.ilohbix.mongodb.net/?appName=Cluster0")
-
 db = client["mango_disease_db"]
 collection = db["predictions"]
 
@@ -35,18 +39,20 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-
     file = request.files["image"]
 
     filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
     file.save(filepath)
 
-    img = image.load_img(filepath, target_size=(224,224))
+    img = image.load_img(filepath, target_size=(224, 224))
     img = image.img_to_array(img)
-    img = img / 255
-    img = np.expand_dims(img, axis=0)
+    img = img / 255.0
+    img = np.expand_dims(img, axis=0).astype(np.float32)  # TFLite expects float32
 
-    prediction = model.predict(img)
+    # Set input tensor
+    interpreter.set_tensor(input_details[0]['index'], img)
+    interpreter.invoke()
+    prediction = interpreter.get_tensor(output_details[0]['index'])
 
     index = np.argmax(prediction)
     result = classes[index]
@@ -59,7 +65,6 @@ def predict():
         "confidence": round(confidence * 100, 2),
         "date": datetime.now()
     }
-
     collection.insert_one(data)
 
     return render_template(
