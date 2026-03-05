@@ -1,0 +1,28 @@
+body{
+background: linear-gradient(120deg,#bcdcea,#a4d4e0);
+font-family: Arial;
+text-align:center;
+}
+
+.container{
+margin-top:100px;
+background:white;
+padding:40px;
+border-radius:10px;
+width:400px;
+margin:auto;
+box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+button{
+padding:10px 20px;
+background:#2e7d32;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1b5e20;
+}
