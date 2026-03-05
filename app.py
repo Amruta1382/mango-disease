@@ -8,8 +8,10 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+# -------------------------------
 # Load TFLite model
-TFLITE_MODEL_PATH = "mango_model.tflite"
+# -------------------------------
+TFLITE_MODEL_PATH = os.path.join(os.path.dirname(__file__), "mango_model.tflite")
 interpreter = tf.lite.Interpreter(model_path=TFLITE_MODEL_PATH)
 interpreter.allocate_tensors()
 
@@ -23,15 +25,25 @@ classes = [
     "Powdery Mildew"
 ]
 
-UPLOAD_FOLDER = "uploads"
+# -------------------------------
+# Upload folder configuration
+# -------------------------------
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+# -------------------------------
 # MongoDB Connection
-client = MongoClient("mongodb+srv://ammupatil456_db_user:mango1234@cluster0.ilohbix.mongodb.net/?appName=Cluster0")
+# -------------------------------
+client = MongoClient(
+    "mongodb+srv://ammupatil456_db_user:mango1234@cluster0.ilohbix.mongodb.net/?appName=Cluster0"
+)
 db = client["mango_disease_db"]
 collection = db["predictions"]
 
-
+# -------------------------------
+# Routes
+# -------------------------------
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -41,15 +53,17 @@ def home():
 def predict():
     file = request.files["image"]
 
+    # Save uploaded file
     filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
     file.save(filepath)
 
+    # Load and preprocess image
     img = image.load_img(filepath, target_size=(224, 224))
     img = image.img_to_array(img)
     img = img / 255.0
     img = np.expand_dims(img, axis=0).astype(np.float32)  # TFLite expects float32
 
-    # Set input tensor
+    # Run TFLite model
     interpreter.set_tensor(input_details[0]['index'], img)
     interpreter.invoke()
     prediction = interpreter.get_tensor(output_details[0]['index'])
