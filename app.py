@@ -5,8 +5,10 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
 app = Flask(__name__)
+print("Does mango_model.h5 exist?", os.path.exists("mango_model.h5"))
 
 model = load_model("mango_model.h5")
+
 
 classes = [
     "Anthracnose",
